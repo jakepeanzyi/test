@@ -63,6 +63,30 @@
                 </div>
             </div>
 
+            <!-- Settings Menu -->
+            <div id="settings-menu" class="hidden">
+                <div class="panel-header">Settings</div>
+                <div class="settings-content">
+                    <label>
+                        Master Volume
+                        <input type="range" min="0" max="100" value="50">
+                    </label>
+                    <label>
+                        Mouse Sensitivity
+                        <input type="range" min="1" max="100" value="50">
+                    </label>
+                    <div class="controls-help">
+                        <strong>Controls:</strong>
+                        <p>WASD: Move</p>
+                        <p>Mouse: Aim</p>
+                        <p>LMB: Interace / Attack</p>
+                        <p>TAB: Inventory</p>
+                        <p>X: Settings</p>
+                    </div>
+                    <button id="close-settings-btn">Close</button>
+                </div>
+            </div>
+
             <!-- Interactions -->
             <div id="interaction-prompt" class="hidden">Press [E] to Pick Up</div>
 
