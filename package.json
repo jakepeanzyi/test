@@ -1,0 +1,14 @@
+{
+    "name": "rust-2d-browser-survival",
+    "version": "1.0.0",
+    "description": "2D Rust Clone",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "devDependencies": {
+        "vite": "^6.0.0"
+    },
+    "type": "module"
+}
