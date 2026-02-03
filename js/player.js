@@ -64,19 +64,47 @@ export class Player {
         if (this.isDead) return;
 
         // Movement
+        // Facing - Calculate this first for movement
+        this.facingAngle = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
+
+        // Movement
+        let fwd = 0;
+        let strafe = 0;
+
+        if (input.isDown('KeyW')) fwd += 1;
+        if (input.isDown('KeyS')) fwd -= 1;
+        if (input.isDown('KeyA')) strafe -= 1;
+        if (input.isDown('KeyD')) strafe += 1;
+
         let dx = 0;
         let dy = 0;
 
-        if (input.isDown('KeyW')) dy -= 1;
-        if (input.isDown('KeyS')) dy += 1;
-        if (input.isDown('KeyA')) dx -= 1;
-        if (input.isDown('KeyD')) dx += 1;
+        if (fwd !== 0 || strafe !== 0) {
+            // Rotate input vector by facingAngle
+            // Fwd is along facingAngle, Strafe is perpendicular (right) based on how we want D to behave
+            // Let's map: 
+            // Forward (W) -> 0 deg relative to facing
+            // Right (D) -> +90 deg relative to facing
 
-        // Normalize
-        if (dx !== 0 || dy !== 0) {
-            let len = Math.hypot(dx, dy);
-            dx /= len;
-            dy /= len;
+            // Direction relative to facing
+            // We can just sum the vectors
+
+            let cos = Math.cos(this.facingAngle);
+            let sin = Math.sin(this.facingAngle);
+
+            // Forward vector: (cos, sin)
+            // Right vector: (-sin, cos)  <-- Rotated 90 deg clockwise (assuming y down)?
+            // Wait, coordinate system: Y is down in Canvas.
+            // 0 is Right (East). 90 (PI/2) is Down (South).
+            // Rotation +90 is Clockwise. Correct.
+
+            let vx = fwd * cos - strafe * sin;
+            let vy = fwd * sin + strafe * cos;
+
+            // Normalize
+            let len = Math.hypot(vx, vy);
+            dx = vx / len;
+            dy = vy / len;
         }
 
         let nextX = this.x + dx * this.speed * dt;
@@ -95,8 +123,7 @@ export class Player {
         let colY = world.checkCollision(this.x, nextY, this.radius);
         if (!colY) this.y = nextY;
 
-        // Facing
-        this.facingAngle = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
+
 
         // Action: Gathering/Attacking
         if (this.attackCooldown > 0) this.attackCooldown -= dt;
