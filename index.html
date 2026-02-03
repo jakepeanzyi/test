@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust 2D - Browser Survival</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- UI Overlay -->
+        <div id="ui-layer">
+            <!-- Top Right: Info/Server Time -->
+            <div class="top-info">
+                <span>RUST 2D SURVIVAL</span>
+                <span id="fps-counter">FPS: 60</span>
+            </div>
+
+            <!-- Bottom Left: Status Bars -->
+            <div class="status-bars">
+                <div class="bar-container health">
+                    <div class="bar-fill" id="health-bar" style="width: 100%;"></div>
+                    <span class="bar-label">HP</span>
+                </div>
+                <div class="bar-container hunger">
+                    <div class="bar-fill" id="hunger-bar" style="width: 90%;"></div>
+                    <span class="bar-label">FOD</span>
+                </div>
+                <div class="bar-container thirst">
+                    <div class="bar-fill" id="thirst-bar" style="width: 95%;"></div>
+                    <span class="bar-label">H2O</span>
+                </div>
+            </div>
+
+            <!-- Bottom Center: Hotbar -->
+            <div class="hotbar" id="hotbar">
+                <div class="slot active" data-index="0">1</div>
+                <div class="slot" data-index="1">2</div>
+                <div class="slot" data-index="2">3</div>
+                <div class="slot" data-index="3">4</div>
+                <div class="slot" data-index="4">5</div>
+                <div class="slot" data-index="5">6</div>
+            </div>
+
+            <!-- Crafting/Inventory Overlay (Hidden by default) -->
+            <div id="inventory-screen" class="hidden">
+                <div class="panel-header">INVENTORY</div>
+                <div class="inventory-grid" id="inventory-grid">
+                    <!-- Javascript will populate this -->
+                </div>
+                <div class="crafting-section">
+                    <div class="panel-header">CRAFTING</div>
+                    <div class="crafting-list" id="crafting-list">
+                        <!-- Javascript will populate this -->
+                    </div>
+                </div>
+            </div>
+            
+             <!-- Interactions -->
+             <div id="interaction-prompt" class="hidden">Press [E] to Interact</div>
+        </div>
+    </div>
+
+    <!-- Game Scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
