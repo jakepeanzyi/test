@@ -14,7 +14,27 @@ const fpsDisplay = document.getElementById('fps-counter');
 const deathScreen = document.getElementById('death-screen');
 const respawnBtn = document.getElementById('respawn-btn');
 const settingsMenu = document.getElementById('settings-menu');
-const closeSettingsBtn = document.getElementById('close-settings-btn');
+// const closeSettingsBtn = document.getElementById('close-settings-btn'); // removed
+
+// Settings Elements
+const volumeSlider = document.getElementById('volume-range');
+const lowPerfToggle = document.getElementById('low-perf-toggle');
+const renderDistSlider = document.getElementById('render-dist-range');
+const sensSlider = document.getElementById('sens-range');
+
+// Game Settings State
+const settings = {
+    volume: 50,
+    lowPerformance: false,
+    renderDistance: 1500,
+    sensitivity: 50
+};
+
+// Sync settings UI
+volumeSlider.addEventListener('input', (e) => settings.volume = parseInt(e.target.value));
+lowPerfToggle.addEventListener('change', (e) => settings.lowPerformance = e.target.checked);
+renderDistSlider.addEventListener('input', (e) => settings.renderDistance = parseInt(e.target.value));
+sensSlider.addEventListener('input', (e) => settings.sensitivity = parseInt(e.target.value));
 
 // Game State
 const input = new InputHandler();
@@ -39,9 +59,9 @@ window.addEventListener('keydown', e => {
     }
 });
 
-closeSettingsBtn.addEventListener('click', () => {
-    settingsMenu.classList.add('hidden');
-});
+// closeSettingsBtn.addEventListener('click', () => {
+//     settingsMenu.classList.add('hidden');
+// });
 
 respawnBtn.addEventListener('click', () => {
     player.respawn();
@@ -60,6 +80,29 @@ resize();
 
 // --- Rendering Helpers ---
 
+function drawHPBar(ctx, x, y, width, health, maxHealth) {
+    if (health >= maxHealth) return; // Hide if full
+
+    const hWidth = 40;
+    const hHeight = 6;
+    const px = x - hWidth / 2;
+    const py = y - width / 1.5 - 10;
+
+    // Background
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(px, py, hWidth, hHeight);
+
+    // Fill
+    const fillWidth = (health / maxHealth) * hWidth;
+    ctx.fillStyle = health < 30 ? '#ff5252' : '#66bb6a';
+    ctx.fillRect(px, py, fillWidth, hHeight);
+
+    // Border
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px, py, hWidth, hHeight);
+}
+
 function drawTree(ctx, x, y, size) {
     // Tree Top-Down
     // Shadow
@@ -75,21 +118,14 @@ function drawTree(ctx, x, y, size) {
     ctx.fill();
 
     // Leaves (Multiple layers for depth)
-    const colors = ['#1b330c', '#2e4e1b', '#416924', '#588c32'];
-    const offsets = [
-        { r: size / 2, dx: 0, dy: 0 },
-        { r: size / 2.2, dx: 5, dy: -5 },
-        { r: size / 2.5, dx: -5, dy: 5 },
-        { r: size / 3, dx: 0, dy: 0 } // Top center
-    ];
+    const colors = settings.lowPerformance ? ['#1b330c', '#416924'] : ['#1b330c', '#2e4e1b', '#416924', '#588c32'];
+    const count = colors.length;
 
-    for (let i = 0; i < colors.length; i++) {
+    for (let i = 0; i < count; i++) {
         ctx.fillStyle = colors[i];
         ctx.beginPath();
-        // A bit of randomness/irregularity could go here if we had seed
-        // For now, layered circles
-        let off = offsets[i];
-        ctx.arc(x + off.dx, y + off.dy, off.r, 0, Math.PI * 2);
+        let r = (size / 2) * (1 - i * (0.5 / count));
+        ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
     }
 }
@@ -154,13 +190,37 @@ function drawStructure(ctx, s) {
     }
 }
 
+function drawOre(ctx, x, y, size, color) {
+    // Ore
+    if (!settings.lowPerformance) {
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.arc(x + 4, y + 4, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x - size / 2, y);
+    ctx.lineTo(x, y - size / 2);
+    ctx.lineTo(x + size / 2, y);
+    ctx.lineTo(x, y + size / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Glitter/Crystal spots
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(x + (i - 1) * size / 4, y + (i % 2 == 0 ? -size / 5 : size / 5), 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
 function drawWolf(ctx, enemy) {
     ctx.save();
     ctx.translate(enemy.x, enemy.y);
 
-    // Basic direction awareness?
-    // If we had velocity, we could rotate.
-    // enemy.vx, enemy.vy
     let angle = Math.atan2(enemy.vy || 0, enemy.vx || 0);
     ctx.rotate(angle);
 
@@ -173,14 +233,13 @@ function drawWolf(ctx, enemy) {
     // Body
     ctx.fillStyle = '#4a4a4a';
     ctx.beginPath();
-    // Slightly more shaped body
     ctx.ellipse(0, 0, 20, 10, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Fur/Tuft on back
     ctx.fillStyle = '#4a4a4a';
     ctx.beginPath();
-    ctx.arc(-5, -8, 5, 0, Math.PI); // humps?
+    ctx.arc(-5, -8, 5, 0, Math.PI);
     ctx.fill();
 
     // Head
@@ -231,12 +290,14 @@ function drawPlayer(ctx, player) {
     ctx.rotate(player.facingAngle);
 
     // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath();
-    ctx.arc(3, 3, player.radius, 0, Math.PI * 2);
-    ctx.fill();
+    if (!settings.lowPerformance) {
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.arc(3, 3, player.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
-    // Backpack (under body)
+    // Backpack
     ctx.fillStyle = '#3e2723';
     ctx.beginPath();
     ctx.roundRect(-25, -12, 10, 24, 2);
@@ -245,80 +306,45 @@ function drawPlayer(ctx, player) {
     // Body
     ctx.beginPath();
     ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#e0ac69'; // Skin
+    ctx.fillStyle = '#e0ac69';
     ctx.fill();
     ctx.strokeStyle = '#222';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Clothes (Vest/Armor)
-    ctx.fillStyle = '#556b2f'; // Olive drab
+    // Clothes
+    ctx.fillStyle = '#556b2f';
     ctx.beginPath();
     ctx.arc(0, 0, player.radius - 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Helmet/Cap (just a circle on top)
+    // Helmet
     ctx.fillStyle = '#3d4d23';
     ctx.beginPath();
     ctx.arc(0, 0, player.radius - 6, 0, Math.PI * 2);
     ctx.fill();
 
     // Hands
-    // Right Hand (Active)
-    ctx.save();
-    ctx.translate(15, 15);
-    // If attacking/swinging, we might want to animate this translation separately in the logic,
-    // but here we just draw the shape.
-
     ctx.beginPath();
-    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+    ctx.arc(15, 15, 7, 0, Math.PI * 2);
     ctx.fillStyle = '#e0ac69';
     ctx.fill();
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.restore();
 
-    // Left Hand (Passive)
     ctx.beginPath();
     ctx.arc(15, -15, 7, 0, Math.PI * 2);
     ctx.fillStyle = '#e0ac69';
     ctx.fill();
-    ctx.strokeStyle = '#222';
     ctx.stroke();
 
-    // Item in hand
+    // Item
     let item = player.hotbar[player.activeSlot];
     if (item) {
         ctx.save();
-        ctx.translate(20, 15); // Anchor at right hand
-
-        let swingAngle = 0;
-        if (player.isAttacking) {
-            swingAngle = 1.0; // Rads
-        }
-        ctx.rotate(swingAngle);
-
-        // Tool Handle
-        ctx.fillStyle = '#8d6e63'; // Wood
+        ctx.translate(20, 15);
+        if (player.isAttacking) ctx.rotate(1.0);
+        ctx.fillStyle = '#8d6e63';
         ctx.fillRect(0, -2, 20, 4);
-
-        // Tool Head logic
-        if (item.id.includes('rock')) {
-            ctx.fillStyle = '#757575';
-            ctx.beginPath();
-            ctx.arc(20, 0, 6, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (item.id.includes('wood')) {
-            // Plank?
-            ctx.fillStyle = '#5d4037';
-            ctx.fillRect(5, -5, 15, 10);
-        } else {
-            // Generic Head
-            ctx.fillStyle = '#555';
-            ctx.fillRect(15, -5, 5, 10);
-        }
-
         ctx.restore();
     }
 
@@ -333,6 +359,8 @@ function loop(timestamp) {
     if (dt > 0.1) dt = 0.1;
 
     // Logic
+    input.update(); // Reset justClicked
+
     if (!player.isDead) {
         // Screen -> World Mouse
         let mouseWorldX = input.mouse.x + camera.x;
@@ -343,10 +371,6 @@ function loop(timestamp) {
 
         // Death Check
         if (player.health <= 0 && !player.isDead) {
-            // Already handled in player.die() but ensure UI is shown
-            deathScreen.classList.remove('hidden');
-        }
-        if (player.isDead && deathScreen.classList.contains('hidden')) {
             deathScreen.classList.remove('hidden');
         }
     }
@@ -360,39 +384,50 @@ function loop(timestamp) {
     camera.y = Math.max(0, Math.min(camera.y, world.height - canvas.height));
 
     // Render
-    ctx.fillStyle = '#304a25'; // Darker grass
+    ctx.fillStyle = '#304a25';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
     ctx.translate(-camera.x, -camera.y);
-
-    // Grid details (Dirt patches)
-    // Procedural noise for ground? Too slow for JS loop per pixel.
-    // Just draw some random patches based on coordinates (deterministic)
 
     // World Boundary
     ctx.strokeStyle = '#222';
     ctx.lineWidth = 20;
     ctx.strokeRect(0, 0, world.width, world.height);
 
-    // Draw Structures (Bottom layer)
+    const renderDistSq = settings.renderDistance * settings.renderDistance;
+
+    // Draw Structures
     for (let s of world.structures) {
+        const dSq = distSq(player.x, player.y, s.x + s.w / 2, s.y + s.h / 2);
+        if (dSq > renderDistSq) continue;
         drawStructure(ctx, s);
+        drawHPBar(ctx, s.x + s.w / 2, s.y + s.h / 2, s.w, s.health, 200);
     }
 
     // Draw Entities
     for (let e of world.entities) {
+        const dSq = distSq(player.x, player.y, e.x, e.y);
+        if (dSq > renderDistSq) continue;
+
         if (e.type === 'tree') drawTree(ctx, e.x, e.y, e.w);
         else if (e.type === 'rock') drawRock(ctx, e.x, e.y, e.w);
+        else if (e.type.includes('ore')) drawOre(ctx, e.x, e.y, e.w, e.color);
+
+        drawHPBar(ctx, e.x, e.y, e.w, e.health, e.maxHealth);
     }
 
     // Draw Enemies
     for (let e of world.enemies) {
+        const dSq = distSq(player.x, player.y, e.x, e.y);
+        if (dSq > renderDistSq) continue;
         drawWolf(ctx, e);
+        drawHPBar(ctx, e.x, e.y, e.radius * 2, e.health, 80);
     }
 
     // Draw Player
     drawPlayer(ctx, player);
+    drawHPBar(ctx, player.x, player.y, player.radius * 2, player.health, 100);
 
     ctx.restore();
 
@@ -401,13 +436,15 @@ function loop(timestamp) {
         uiHealth.style.width = player.health + '%';
         uiHunger.style.width = player.hunger + '%';
         uiThirst.style.width = player.thirst + '%';
-
         if (uiManager.isOpen) uiManager.updateInventory();
     }
 
     fpsDisplay.innerText = `FPS: ${Math.round(1 / dt)}`;
-
     requestAnimationFrame(loop);
+}
+
+function distSq(x1, y1, x2, y2) {
+    return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 }
 
 requestAnimationFrame(loop);

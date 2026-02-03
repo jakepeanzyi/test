@@ -54,6 +54,33 @@ export class World {
             }
         }
 
+        // Generate Ores (Metal and Sulfur)
+        const oreTypes = [
+            { type: 'metal_ore', resource: 'metal', color: '#b0bec5', hp: 200 },
+            { type: 'sulfur_ore', resource: 'sulfur', color: '#fff176', hp: 120 }
+        ];
+
+        for (let type of oreTypes) {
+            for (let i = 0; i < 6; i++) {
+                let cx = randomInt(100, this.width - 100);
+                let cy = randomInt(100, this.height - 100);
+                for (let j = 0; j < 4; j++) {
+                    this.entities.push({
+                        id: `${type.type}_${i}_${j}`,
+                        type: type.type,
+                        x: cx + randomInt(-50, 50),
+                        y: cy + randomInt(-50, 50),
+                        w: randomInt(35, 50),
+                        h: randomInt(35, 50),
+                        health: type.hp,
+                        maxHealth: type.hp,
+                        resourceType: type.resource,
+                        color: type.color
+                    });
+                }
+            }
+        }
+
         // Generate Wolves
         for (let i = 0; i < 5; i++) {
             this.enemies.push({

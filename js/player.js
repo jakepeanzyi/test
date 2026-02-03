@@ -128,7 +128,7 @@ export class Player {
         // Action: Gathering/Attacking
         if (this.attackCooldown > 0) this.attackCooldown -= dt;
 
-        if (input.mouse.leftDown && this.attackCooldown <= 0) {
+        if (input.mouse.leftJustClicked && this.attackCooldown <= 0) {
             let item = this.hotbar[this.activeSlot];
 
             // Check if building

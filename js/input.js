@@ -1,7 +1,7 @@
 export class InputHandler {
     constructor() {
         this.keys = {};
-        this.mouse = { x: 0, y: 0, leftDown: false, rightDown: false };
+        this.mouse = { x: 0, y: 0, leftDown: false, rightDown: false, leftJustClicked: false };
         this.scroll = 0;
 
         window.addEventListener('keydown', (e) => this.keys[e.code] = true);
@@ -13,7 +13,10 @@ export class InputHandler {
         });
 
         window.addEventListener('mousedown', (e) => {
-            if (e.button === 0) this.mouse.leftDown = true;
+            if (e.button === 0) {
+                this.mouse.leftDown = true;
+                this.mouse.leftJustClicked = true;
+            }
             if (e.button === 2) this.mouse.rightDown = true;
         });
 
@@ -28,6 +31,10 @@ export class InputHandler {
 
         // Prevent context menu
         window.addEventListener('contextmenu', e => e.preventDefault());
+    }
+
+    update() {
+        this.mouse.leftJustClicked = false;
     }
 
     isDown(code) {

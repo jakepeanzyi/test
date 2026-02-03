@@ -65,25 +65,44 @@
 
             <!-- Settings Menu -->
             <div id="settings-menu" class="hidden">
-                <div class="panel-header">Settings</div>
+                <div class="panel-header">Settings <span style="font-size: 10px; color: #666; float: right;">PRESS [X]
+                        TO CLOSE</span></div>
                 <div class="settings-content">
-                    <label>
-                        Master Volume
-                        <input type="range" min="0" max="100" value="50">
-                    </label>
-                    <label>
-                        Mouse Sensitivity
-                        <input type="range" min="1" max="100" value="50">
-                    </label>
-                    <div class="controls-help">
-                        <strong>Controls:</strong>
-                        <p>WASD: Move</p>
-                        <p>Mouse: Aim</p>
-                        <p>LMB: Interace / Attack</p>
-                        <p>TAB: Inventory</p>
-                        <p>X: Settings</p>
+                    <div class="settings-section">
+                        <div class="section-title">Audio</div>
+                        <label>
+                            Master Volume
+                            <input type="range" id="volume-range" min="0" max="100" value="50">
+                        </label>
                     </div>
-                    <button id="close-settings-btn">Close</button>
+
+                    <div class="settings-section">
+                        <div class="section-title">Graphics</div>
+                        <label class="toggle-container">
+                            Low Performance Mode
+                            <input type="checkbox" id="low-perf-toggle">
+                        </label>
+                        <label>
+                            Render Distance
+                            <input type="range" id="render-dist-range" min="500" max="3000" value="1500">
+                        </label>
+                    </div>
+
+                    <div class="settings-section">
+                        <div class="section-title">Controls</div>
+                        <label>
+                            Mouse Sensitivity
+                            <input type="range" id="sens-range" min="1" max="100" value="50">
+                        </label>
+                        <div class="controls-help">
+                            <strong>Keybinds:</strong>
+                            <p>WASD: Move (Relative to Aim)</p>
+                            <p>Mouse: Aim & Look</p>
+                            <p>LMB: Interace / Attack (Click to hit)</p>
+                            <p>TAB: Inventory & Crafting</p>
+                            <p>X: Toggle Settings</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
