@@ -2,31 +2,67 @@ import { circleRectIntersect, dist, clamp } from './utils.js';
 
 export class Player {
     constructor(x, y) {
+        this.startX = x;
+        this.startY = y;
         this.x = x;
         this.y = y;
         this.radius = 20;
-        this.speed = 200; // pixels per second
+        this.speed = 220; // slightly faster
 
         // Stats
         this.health = 100;
         this.hunger = 100;
         this.thirst = 100;
+        this.isDead = false;
 
         // Inventory
         this.inventory = {
             'wood': 0,
             'stone': 0
         };
-        this.hotbar = [null, null, null, null, null, null]; // Items in hotbar
+        this.hotbar = [null, null, null, null, null, null];
         this.activeSlot = 0;
 
         // State
         this.isAttacking = false;
         this.attackCooldown = 0;
         this.facingAngle = 0;
+
+        // Give starting tools
+        this.hotbar[0] = { name: 'Rock', id: 'rock_tool' };
+    }
+
+    respawn() {
+        this.x = this.startX;
+        this.y = this.startY;
+        this.health = 100;
+        this.hunger = 100;
+        this.thirst = 100;
+        this.isDead = false;
+        this.inventory = { 'wood': 0, 'stone': 0 }; // Lose items
+        // Keep hotbar? Rust you lose everything. Let's start with empty/rock.
+        this.hotbar = [null, null, null, null, null, null];
+        this.hotbar[0] = { name: 'Rock', id: 'rock_tool' };
+    }
+
+    takeDamage(amount) {
+        if (this.isDead) return;
+        this.health -= amount;
+        if (this.health <= 0) {
+            this.health = 0;
+            this.die();
+        }
+    }
+
+    die() {
+        this.isDead = true;
+        console.log("Player died");
+        // Main loop will handle UI
     }
 
     update(dt, input, world, mouseWorldX, mouseWorldY) {
+        if (this.isDead) return;
+
         // Movement
         let dx = 0;
         let dy = 0;
@@ -50,21 +86,14 @@ export class Player {
         nextX = clamp(nextX, 0, world.width);
         nextY = clamp(nextY, 0, world.height);
 
-        // Simple collision with objects (treat them as solid for center of player)
-        // Ideally we slide against them, but for now we stop.
-        let collider = world.checkCollision(nextX, nextY, this.radius);
-        if (!collider) {
-            this.x = nextX;
-            this.y = nextY;
-        } else {
-            // Try only X
-            let colX = world.checkCollision(nextX, this.y, this.radius);
-            if (!colX) this.x = nextX;
+        // Simple collision
+        // Try move X
+        let colX = world.checkCollision(nextX, this.y, this.radius);
+        if (!colX) this.x = nextX;
 
-            // Try only Y
-            let colY = world.checkCollision(this.x, nextY, this.radius);
-            if (!colY) this.y = nextY;
-        }
+        // Try move Y
+        let colY = world.checkCollision(this.x, nextY, this.radius);
+        if (!colY) this.y = nextY;
 
         // Facing
         this.facingAngle = Math.atan2(mouseWorldY - this.y, mouseWorldX - this.x);
@@ -74,22 +103,31 @@ export class Player {
 
         if (input.mouse.leftDown && this.attackCooldown <= 0) {
             let item = this.hotbar[this.activeSlot];
-            if (item && (item.id.includes('wall') || item.id.includes('door'))) {
+
+            // Check if building
+            if (item && item.type === 'structure') {
                 this.placeStructure(world, mouseWorldX, mouseWorldY, item);
+                this.attackCooldown = 0.2;
+            }
+            else if (item && (item.id.includes('wall') || item.id.includes('door'))) {
+                // If legacy items without type
+                this.placeStructure(world, mouseWorldX, mouseWorldY, item);
+                this.attackCooldown = 0.2;
             } else {
                 this.attack(world, mouseWorldX, mouseWorldY);
+                this.attackCooldown = 0.5;
+                this.isAttacking = true;
+                setTimeout(() => this.isAttacking = false, 200);
             }
-            this.attackCooldown = 0.5;
-            this.isAttacking = true;
-            setTimeout(() => this.isAttacking = false, 200);
         }
 
         // Tick stats
         this.hunger -= 0.5 * dt;
         this.thirst -= 0.7 * dt;
 
-        this.hunger = Math.max(0, this.hunger);
-        this.thirst = Math.max(0, this.thirst);
+        if (this.hunger <= 0 || this.thirst <= 0) {
+            this.takeDamage(1 * dt); // Starvation damage
+        }
     }
 
     placeStructure(world, mx, my, item) {
@@ -98,9 +136,17 @@ export class Player {
         let gx = Math.floor(mx / SNAP) * SNAP;
         let gy = Math.floor(my / SNAP) * SNAP;
 
+        // Range check
+        if (dist(this.x, this.y, gx + SNAP / 2, gy + SNAP / 2) > 200) return;
+
         // Check collision with player
         if (circleRectIntersect(this.x, this.y, this.radius, gx, gy, SNAP, SNAP)) {
             return; // Can't build on self
+        }
+
+        // Check availability (no other structure)
+        for (let s of world.structures) {
+            if (s.x === gx && s.y === gy) return;
         }
 
         // Add to world
@@ -109,7 +155,7 @@ export class Player {
             y: gy,
             w: SNAP,
             h: SNAP,
-            type: item.id,
+            type: item.id || item.itemId,
             health: 200
         });
 
@@ -118,21 +164,41 @@ export class Player {
     }
 
     attack(world, mx, my) {
-        // Simple hitscan or melee range check
-        // Check objects within range of player and close to mouse cursor
-        // Max reach 100px
-        if (dist(this.x, this.y, mx, my) > 100) return;
+        // Check objects within range
+        const REACH = 120;
+        if (dist(this.x, this.y, mx, my) > REACH) return;
 
+        // Entities
         for (let e of world.entities) {
-            if (circleRectIntersect(mx, my, 5, e.x, e.y, e.w, e.h)) {
-                // Hit!
+            if (circleRectIntersect(mx, my, 10, e.x - e.w / 2, e.y - e.h / 2, e.w, e.h)) {
                 e.health -= 25;
+
                 // Add resource
                 if (!this.inventory[e.resourceType]) this.inventory[e.resourceType] = 0;
-                this.inventory[e.resourceType] += 10;
-                // Visual feedback could be added here (particles)
-                console.log(`Hit ${e.type}! HP: ${e.health}. Inv: ${JSON.stringify(this.inventory)}`);
-                break; // Only hit one
+
+                // Bonus for tools?
+                let bonus = 1;
+                let item = this.hotbar[this.activeSlot];
+                // if (item && item.id === 'axe' && e.resourceType === 'wood') bonus = 2;
+
+                this.inventory[e.resourceType] += 10 * bonus;
+                return; // hit one
+            }
+        }
+
+        // Enemies
+        for (let e of world.enemies) {
+            if (dist(mx, my, e.x, e.y) < e.radius + 10) {
+                e.health -= 35;
+                // Pushback
+                let dx = e.x - this.x;
+                let dy = e.y - this.y;
+                let len = Math.hypot(dx, dy);
+                if (len > 0) {
+                    e.x += (dx / len) * 30;
+                    e.y += (dy / len) * 30;
+                }
+                return;
             }
         }
     }

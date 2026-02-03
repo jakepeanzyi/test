@@ -1,21 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rust 2D - Browser Survival</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        
+
         <!-- UI Overlay -->
         <div id="ui-layer">
             <!-- Top Right: Info/Server Time -->
             <div class="top-info">
                 <span>RUST 2D SURVIVAL</span>
-                <span id="fps-counter">FPS: 60</span>
+                <span id="fps-counter"
+                    style="margin-left: 20px; font-weight: normal; font-size: 12px; color: #666;">FPS: 60</span>
             </div>
 
             <!-- Bottom Left: Status Bars -->
@@ -26,7 +29,7 @@
                 </div>
                 <div class="bar-container hunger">
                     <div class="bar-fill" id="hunger-bar" style="width: 90%;"></div>
-                    <span class="bar-label">FOD</span>
+                    <span class="bar-label">CAL</span>
                 </div>
                 <div class="bar-container thirst">
                     <div class="bar-fill" id="thirst-bar" style="width: 95%;"></div>
@@ -46,24 +49,33 @@
 
             <!-- Crafting/Inventory Overlay (Hidden by default) -->
             <div id="inventory-screen" class="hidden">
-                <div class="panel-header">INVENTORY</div>
-                <div class="inventory-grid" id="inventory-grid">
-                    <!-- Javascript will populate this -->
+                <div class="inventory-section">
+                    <div class="panel-header">Inventory</div>
+                    <div class="inventory-grid" id="inventory-grid">
+                        <!-- Javascript will populate this -->
+                    </div>
                 </div>
                 <div class="crafting-section">
-                    <div class="panel-header">CRAFTING</div>
+                    <div class="panel-header">Crafting</div>
                     <div class="crafting-list" id="crafting-list">
                         <!-- Javascript will populate this -->
                     </div>
                 </div>
             </div>
-            
-             <!-- Interactions -->
-             <div id="interaction-prompt" class="hidden">Press [E] to Interact</div>
+
+            <!-- Interactions -->
+            <div id="interaction-prompt" class="hidden">Press [E] to Pick Up</div>
+
+            <!-- Death Screen -->
+            <div id="death-screen" class="hidden">
+                <h1>YOU DIED</h1>
+                <button id="respawn-btn">RESPAWN</button>
+            </div>
         </div>
     </div>
 
     <!-- Game Scripts -->
     <script type="module" src="js/main.js"></script>
 </body>
+
 </html>
